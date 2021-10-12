@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shop_app/components/default_button.dart';
-import 'package:shop_app/screens/sign_in/components/custom_surffix_icon.dart';
+import 'package:shop_app/components/custom_surffix_icon.dart';
+import 'package:shop_app/components/form_error.dart';
+import 'package:shop_app/constants.dart';
 import 'package:shop_app/size_config.dart';
 
 class Body extends StatelessWidget {
@@ -42,6 +44,8 @@ class SignForm extends StatefulWidget {
 
 class _SignFormState extends State<SignForm> {
   final _formKey = GlobalKey<FormState>();
+  late String email;
+  late String password;
   final List<String> errors = [];
   @override
   Widget build(BuildContext context) {
@@ -57,8 +61,15 @@ class _SignFormState extends State<SignForm> {
           SizedBox(
             height: getProportionateScreenHeight(20),
           ),
-          formErrors(errors: errors),
-          DefaultButton(text: "Continue", pressed: (){}),
+          FormError(errors: errors),
+          SizedBox(
+            height: getProportionateScreenHeight(20),
+          ),
+          DefaultButton(text: "Continue", pressed: (){
+            if(_formKey.currentState!.validate()){
+              _formKey.currentState!.save();
+            }
+          }),
         ],
       ),
     );
@@ -67,10 +78,29 @@ class _SignFormState extends State<SignForm> {
   TextFormField buildEmailFormField(){
     return TextFormField(
       keyboardType: TextInputType.emailAddress,
-      validator: (value){
-        if(value!.isEmpty){
+      onSaved: (newValue){
+        email = newValue!;
+      },
+      onChanged: (value){
+        if(value!.isNotEmpty && errors.contains(kEmailNullError)){
           setState(() {
-            errors.add("Please enter your email");
+            errors.remove(kEmailNullError);
+          });
+        }else if(emailValidatorRegExp.hasMatch(value) && errors.contains(kInvalidEmailError)){
+          setState(() {
+            errors.remove(kInvalidEmailError);
+          });
+        }
+        return null;
+      },
+      validator: (value){
+        if(value!.isEmpty && !errors.contains(kEmailNullError)){
+          setState(() {
+            errors.add(kEmailNullError);
+          });
+        }else if(!emailValidatorRegExp.hasMatch(value) && !errors.contains(kInvalidEmailError)){
+          setState(() {
+            errors.add(kInvalidEmailError);
           });
         }
         return null;
@@ -87,6 +117,33 @@ class _SignFormState extends State<SignForm> {
   TextFormField buildPasswordFormField(){
     return TextFormField(
       obscureText: true,
+      onSaved: (newValue){
+        password = newValue!;
+      },
+      onChanged: (value){
+        if(value!.isNotEmpty && errors.contains(kPassNullError)){
+          setState(() {
+            errors.remove(kPassNullError);
+          });
+        }else if(value.length >= 8 && errors.contains(kShortPassError)){
+          setState(() {
+            errors.remove(kShortPassError);
+          });
+        }
+        return null;
+      },
+      validator: (value){
+        if(value!.isEmpty && !errors.contains(kPassNullError)){
+          setState(() {
+            errors.add(kPassNullError);
+          });
+        }else if(value.length < 8 && !errors.contains(kShortPassError)){
+          setState(() {
+            errors.add(kShortPassError);
+          });
+        }
+        return null;
+      },
       decoration: InputDecoration(
         labelText: "Password",
         hintText: "Enter Your password",
@@ -97,30 +154,6 @@ class _SignFormState extends State<SignForm> {
   }
 }
 
-class FormError extends StatelessWidget {
-
-
-  final List<String> errors;
-
-  const FormError({Key? key, required this.errors}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: List.generate(errors.length, (index) => formErrorText(error: errors[index])),
-    );
-  }
-
-  Row formErrorText({required String error}){
-    return Row(
-      children: [
-        SvgPicture.asset("assets/icons/Error.svg", height: getProportionateScreenWidth(14), width: getProportionateScreenWidth(14),),
-        SizedBox(width: getProportionateScreenWidth(10), height: getProportionateScreenWidth(14),),
-        Text(error),
-      ],
-    );
-  }
-}
 
 
 
